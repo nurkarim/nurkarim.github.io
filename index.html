@@ -1,9 +1,720 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Nur Karim</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nur Karim - Full-Stack Developer & SaaS Specialist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      overflow-x: hidden;
+    }
+
+    /* Navigation */
+    nav {
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 1rem 0;
+    }
+
+    nav .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    nav .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #2563eb;
+    }
+
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 2rem;
+    }
+
+    nav ul li a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    nav ul li a:hover {
+      color: #2563eb;
+    }
+
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .mobile-menu span {
+      width: 25px;
+      height: 3px;
+      background: #333;
+      border-radius: 3px;
+    }
+
+    /* Hero Section */
+    #hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8rem 2rem;
+      text-align: center;
+    }
+
+    #hero h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    #hero .tagline {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      font-weight: 300;
+    }
+
+    #hero .subtitle {
+      font-size: 1.1rem;
+      margin-bottom: 2.5rem;
+      opacity: 0.9;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.9rem 2rem;
+      border: none;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: white;
+      color: #667eea;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: white;
+      border: 2px solid white;
+    }
+
+    .btn-secondary:hover {
+      background: white;
+      color: #667eea;
+      transform: translateY(-3px);
+    }
+
+    /* Section Styling */
+    section {
+      padding: 5rem 2rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    section h2 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 3rem;
+      color: #1f2937;
+      position: relative;
+    }
+
+    section h2::after {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 4px;
+      background: #667eea;
+      margin: 1rem auto 0;
+      border-radius: 2px;
+    }
+
+    /* About Section */
+    #about {
+      background: #f9fafb;
+    }
+
+    #about .content {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #4b5563;
+    }
+
+    #about .profile-img {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      margin: 0 auto 2rem;
+      display: block;
+      border: 5px solid #667eea;
+      object-fit: cover;
+      background: #e5e7eb;
+    }
+
+    /* Skills Section */
+    #skills .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
+
+    .skill-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .skill-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    .skill-icon {
+      width: 60px;
+      height: 60px;
+      background: #667eea;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 1.8rem;
+      color: white;
+    }
+
+    .skill-card h3 {
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+      color: #1f2937;
+    }
+
+    .skill-card p {
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+
+    /* Services Section */
+    #services {
+      background: #f9fafb;
+    }
+
+    #services .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+    }
+
+    .service-card {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+
+    .service-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    .service-card h3 {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      color: #667eea;
+    }
+
+    .service-card p {
+      color: #6b7280;
+      line-height: 1.7;
+    }
+
+    /* Portfolio Section */
+    #portfolio .portfolio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .portfolio-item {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+
+    .portfolio-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    .portfolio-img {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .portfolio-content {
+      padding: 1.5rem;
+    }
+
+    .portfolio-content h3 {
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+      color: #1f2937;
+    }
+
+    .portfolio-content p {
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+
+    .portfolio-content .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag {
+      background: #e0e7ff;
+      color: #667eea;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+
+    /* Contact Section */
+    #contact {
+      background: #f9fafb;
+      text-align: center;
+    }
+
+    #contact .contact-info {
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+
+    #contact .email {
+      font-size: 1.3rem;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 2rem;
+    }
+
+    #contact .email:hover {
+      text-decoration: underline;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .social-links a {
+      width: 50px;
+      height: 50px;
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 1.5rem;
+      transition: all 0.3s;
+    }
+
+    .social-links a:hover {
+      background: #764ba2;
+      transform: translateY(-5px);
+    }
+
+    /* Footer */
+    footer {
+      background: #1f2937;
+      color: white;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    footer .social-links-footer {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    footer .social-links-footer a {
+      color: white;
+      font-size: 1.5rem;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    footer .social-links-footer a:hover {
+      color: #667eea;
+    }
+
+    footer p {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav ul {
+        display: none;
+      }
+
+      .mobile-menu {
+        display: flex;
+      }
+
+      #hero h1 {
+        font-size: 2rem;
+      }
+
+      #hero .tagline {
+        font-size: 1.2rem;
+      }
+
+      #hero .subtitle {
+        font-size: 1rem;
+      }
+
+      section {
+        padding: 3rem 1rem;
+      }
+
+      section h2 {
+        font-size: 2rem;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h2>Official Developer Site</h2>
+  <!-- Navigation -->
+  <nav>
+    <div class="container">
+      <div class="logo">NK</div>
+      <ul>
+        <li><a href="#hero">Home</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#portfolio">Portfolio</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <div class="mobile-menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section id="hero">
+    <h1>Nur Karim</h1>
+    <p class="tagline">You can get help from Nur Karim</p>
+    <p class="subtitle">Full-Stack Developer (Laravel & React) | SaaS Specialist | YouTube Automation | AI Integration</p>
+    <div class="cta-buttons">
+      <a href="#contact" class="btn btn-primary">Contact Me</a>
+      <a href="#portfolio" class="btn btn-secondary">View Portfolio</a>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about">
+    <div class="container">
+      <h2>About Me</h2>
+      <img src="https://via.placeholder.com/150" alt="Nur Karim" class="profile-img">
+      <div class="content">
+        <p>
+          Hi, I'm Nur Karim, a passionate Full-Stack Developer specializing in Laravel and React. 
+          With extensive experience in building scalable SaaS applications, automating YouTube workflows, 
+          and integrating cutting-edge AI technologies, I help businesses transform their ideas into 
+          powerful digital solutions. I'm dedicated to writing clean, efficient code and delivering 
+          exceptional user experiences. Let's build something amazing together!
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Skills Section -->
+  <section id="skills">
+    <div class="container">
+      <h2>Skills</h2>
+      <div class="skills-grid">
+        <div class="skill-card">
+          <div class="skill-icon">🚀</div>
+          <h3>Laravel</h3>
+          <p>Expert in building robust backend systems, RESTful APIs, and database architecture using Laravel framework.</p>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">⚛️</div>
+          <h3>React</h3>
+          <p>Creating dynamic, responsive, and interactive user interfaces with modern React and component-based architecture.</p>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">☁️</div>
+          <h3>SaaS Development</h3>
+          <p>Designing and deploying scalable Software-as-a-Service platforms with subscription management and multi-tenancy.</p>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">🤖</div>
+          <h3>AI Integration</h3>
+          <p>Implementing AI-powered features, machine learning models, and intelligent automation into applications.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services Section -->
+  <section id="services">
+    <div class="container">
+      <h2>Services</h2>
+      <div class="services-grid">
+        <div class="service-card">
+          <h3>Full-Stack Web Development</h3>
+          <p>End-to-end web application development using Laravel for backend and React for frontend, ensuring seamless integration and optimal performance.</p>
+        </div>
+        <div class="service-card">
+          <h3>SaaS Platform Development</h3>
+          <p>Custom SaaS solutions with subscription billing, user management, multi-tenancy, and scalable cloud infrastructure.</p>
+        </div>
+        <div class="service-card">
+          <h3>YouTube Automation</h3>
+          <p>Automated content management, scheduling, analytics tracking, and workflow optimization for YouTube channels.</p>
+        </div>
+        <div class="service-card">
+          <h3>AI & Machine Learning Integration</h3>
+          <p>Integrate AI capabilities into your applications including natural language processing, image recognition, and predictive analytics.</p>
+        </div>
+        <div class="service-card">
+          <h3>API Development & Integration</h3>
+          <p>Design and develop RESTful APIs, third-party integrations, and microservices architecture for your business needs.</p>
+        </div>
+        <div class="service-card">
+          <h3>Consulting & Code Review</h3>
+          <p>Technical consulting, code audits, performance optimization, and best practices implementation for your projects.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Portfolio Section -->
+  <section id="portfolio">
+    <div class="container">
+      <h2>Portfolio</h2>
+      <div class="portfolio-grid">
+        <div class="portfolio-item">
+          <div class="portfolio-img">SaaS Project 1</div>
+          <div class="portfolio-content">
+            <h3>Enterprise SaaS Platform</h3>
+            <p>A comprehensive SaaS solution for project management with team collaboration, real-time updates, and advanced analytics.</p>
+            <div class="tags">
+              <span class="tag">Laravel</span>
+              <span class="tag">React</span>
+              <span class="tag">MySQL</span>
+            </div>
+          </div>
+        </div>
+        <div class="portfolio-item">
+          <div class="portfolio-img">YouTube Automation</div>
+          <div class="portfolio-content">
+            <h3>YouTube Content Manager</h3>
+            <p>Automated content scheduling, thumbnail generation, and analytics dashboard for multiple YouTube channels.</p>
+            <div class="tags">
+              <span class="tag">Laravel</span>
+              <span class="tag">YouTube API</span>
+              <span class="tag">AI</span>
+            </div>
+          </div>
+        </div>
+        <div class="portfolio-item">
+          <div class="portfolio-img">AI Integration</div>
+          <div class="portfolio-content">
+            <h3>AI-Powered CRM</h3>
+            <p>Customer relationship management system with AI-driven insights, predictive analytics, and automated workflows.</p>
+            <div class="tags">
+              <span class="tag">React</span>
+              <span class="tag">AI/ML</span>
+              <span class="tag">API</span>
+            </div>
+          </div>
+        </div>
+        <div class="portfolio-item">
+          <div class="portfolio-img">E-Commerce</div>
+          <div class="portfolio-content">
+            <h3>Full-Stack E-Commerce</h3>
+            <p>Modern e-commerce platform with payment integration, inventory management, and customer analytics.</p>
+            <div class="tags">
+              <span class="tag">Laravel</span>
+              <span class="tag">React</span>
+              <span class="tag">Stripe</span>
+            </div>
+          </div>
+        </div>
+        <div class="portfolio-item">
+          <div class="portfolio-img">Dashboard</div>
+          <div class="portfolio-content">
+            <h3>Analytics Dashboard</h3>
+            <p>Real-time data visualization and reporting dashboard with customizable widgets and export capabilities.</p>
+            <div class="tags">
+              <span class="tag">React</span>
+              <span class="tag">Charts</span>
+              <span class="tag">API</span>
+            </div>
+          </div>
+        </div>
+        <div class="portfolio-item">
+          <div class="portfolio-img">Mobile App</div>
+          <div class="portfolio-content">
+            <h3>Mobile-First Web App</h3>
+            <p>Progressive web application with offline capabilities, push notifications, and native-like experience.</p>
+            <div class="tags">
+              <span class="tag">React</span>
+              <span class="tag">PWA</span>
+              <span class="tag">Laravel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact">
+    <div class="container">
+      <h2>Get In Touch</h2>
+      <div class="contact-info">
+        <p>I'm always open to discussing new projects, creative ideas, or opportunities to be part of your vision.</p>
+        <a href="mailto:nurkarim.ajra@gmail.com" class="email">nurkarim.ajra@gmail.com</a>
+      </div>
+      <div class="social-links">
+        <a href="https://www.linkedin.com/in/nurkarim" target="_blank" aria-label="LinkedIn">
+          <span>in</span>
+        </a>
+        <a href="https://github.com/nurkarim" target="_blank" aria-label="GitHub">
+          <span>GH</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="social-links-footer">
+      <a href="https://www.linkedin.com/in/nurkarim" target="_blank" aria-label="LinkedIn">in</a>
+      <a href="https://github.com/nurkarim" target="_blank" aria-label="GitHub">GH</a>
+    </div>
+    <p>&copy; 2026 Nur Karim. All rights reserved.</p>
+  </footer>
+
+  <script>
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Mobile menu toggle (basic functionality)
+    const mobileMenu = document.querySelector('.mobile-menu');
+    const navUl = document.querySelector('nav ul');
+    
+    mobileMenu.addEventListener('click', () => {
+      if (navUl.style.display === 'flex') {
+        navUl.style.display = 'none';
+      } else {
+        navUl.style.display = 'flex';
+        navUl.style.flexDirection = 'column';
+        navUl.style.position = 'absolute';
+        navUl.style.top = '60px';
+        navUl.style.right = '2rem';
+        navUl.style.background = 'white';
+        navUl.style.padding = '1rem';
+        navUl.style.borderRadius = '8px';
+        navUl.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+      }
+    });
+  </script>
 </body>
 </html>
