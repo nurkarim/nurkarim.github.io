@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Gem Crush</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root { --bg: #0B0E1A; --card: #151929; --border: #1E2642; --accent: #FF4757; --gold: #FCD34D; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:'Nunito',sans-serif; background:var(--bg); color:#E2E8F0; overflow:hidden; height:100vh; width:100vw; }
+
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition: opacity 0.5s, transform 0.5s; }
+  .screen.hidden { opacity:0; pointer-events:none; transform:scale(0.95); }
+
+  #startScreen .bg-gems { position:absolute; inset:0; overflow:hidden; }
+  .bg-gem { position:absolute; border-radius:18px; opacity:0.12; animation: floatGem linear infinite; }
+  @keyframes floatGem {
+    0%   { transform: translateY(110vh) rotate(0deg); }
+    100% { transform: translateY(-20vh) rotate(360deg); }
+  }
+
+  .play-btn { position:relative; padding:18px 64px; border:none; border-radius:16px; font-family:'Nunito',sans-serif;
+    font-size:1.6rem; font-weight:900; color:#fff; cursor:pointer; letter-spacing:2px;
+    background: linear-gradient(135deg, #FF4757, #A855F7);
+    box-shadow: 0 0 30px rgba(255,71,87,0.3), 0 8px 32px rgba(0,0,0,0.4);
+    transition: transform 0.2s, box-shadow 0.2s; }
+  .play-btn:hover { transform:scale(1.07); box-shadow: 0 0 50px rgba(255,71,87,0.5), 0 12px 40px rgba(0,0,0,0.5); }
+  .play-btn:active { transform:scale(0.97); }
+
+  .stat-box { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);
+    border-radius:12px; padding:8px 16px; text-align:center; min-width:80px; }
+  .stat-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:#64748B; font-weight:700; }
+  .stat-value { font-size:1.5rem; font-weight:900; line-height:1.2; }
+
+  .progress-track { width:100%; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:3px; transition: width 0.4s ease-out;
+    background: linear-gradient(90deg, #34D399, #FCD34D); }
+
+  #gameCanvas { border-radius:16px; cursor:pointer; touch-action:none;
+    box-shadow: 0 0 60px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.2); }
+
+  .combo-popup { position:absolute; font-weight:900; pointer-events:none; animation: comboPop 0.8s ease-out forwards; }
+  @keyframes comboPop {
+    0%   { opacity:1; transform:scale(0.5) translateY(0); }
+    30%  { transform:scale(1.3) translateY(-10px); }
+    100% { opacity:0; transform:scale(1) translateY(-50px); }
+  }
+
+  .game-over-score { font-size:4rem; font-weight:900; line-height:1;
+    background: linear-gradient(135deg, #FF4757, #FCD34D, #34D399);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:0.01ms!important; transition-duration:0.01ms!important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== START SCREEN ===== -->
+<div id="startScreen" class="screen">
+  <div class="bg-gems" id="bgGems"></div>
+  <div class="relative z-10 text-center px-6">
+    <h1 class="text-6xl sm:text-8xl font-black tracking-tight mb-2"
+        style="background:linear-gradient(135deg,#FF4757,#FCD34D,#38BDF8,#34D399,#C084FC);
+               -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+      GEM CRUSH
+    </h1>
+    <p class="text-slate-400 text-lg mb-10 max-w-md mx-auto">Swap gems, chain combos, and beat the clock in this dazzling puzzle adventure</p>
+    <button class="play-btn" id="playBtn" aria-label="Start game">PLAY</button>
+    <div class="mt-8 flex gap-8 justify-center text-sm text-slate-500">
+      <span><i class="fa-solid fa-hand-pointer mr-1"></i> Swap adjacent gems</span>
+      <span><i class="fa-solid fa-layer-group mr-1"></i> Match 3 or more</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="gameScreen" class="screen hidden" style="padding:12px;">
+  <div class="relative z-10 flex flex-col items-center w-full" style="max-width:520px;">
+    <!-- Top Stats -->
+    <div class="flex items-stretch gap-3 w-full mb-2">
+      <div class="stat-box flex-1">
+        <div class="stat-label">Score</div>
+        <div class="stat-value text-white" id="scoreVal">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Level</div>
+        <div class="stat-value" style="color:var(--gold);" id="levelVal">1</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" style="color:#38BDF8;" id="timeVal">60</div>
+      </div>
+      <div class="stat-box flex-1">
+        <div class="stat-label"><i class="fa-solid fa-bullseye mr-1"></i>Goal</div>
+        <div class="stat-value" style="color:#34D399;" id="goalVal">1000</div>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div class="progress-track w-full mb-3">
+      <div class="progress-fill" id="progressFill" style="width:0%;"></div>
+    </div>
+    <!-- Canvas container -->
+    <div style="position:relative;" id="canvasWrap">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+    <!-- Power-ups hint -->
+    <div class="mt-3 flex gap-6 text-xs text-slate-500">
+      <span><span style="color:#FF4757;">&#9632;</span><span style="color:#FF4757;">&#9632;</span><span style="color:#FF4757;">&#9632;</span><span style="color:#FF4757;">&#9632;</span> Line clear</span>
+      <span><span style="color:#FCD34D;">&#9733;</span> 5-match: Color bomb</span>
+      <span>T-shape: Area blast</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GAME OVER SCREEN ===== -->
+<div id="gameOverScreen" class="screen hidden">
+  <div class="relative z-10 text-center px-6">
+    <p class="text-slate-400 text-lg mb-2">Final Score</p>
+    <div class="game-over-score" id="finalScore">0</div>
+    <div class="flex gap-4 justify-center my-4" id="starRating"></div>
+    <p class="text-slate-300 text-lg mb-1" id="endMsg">Great game!</p>
+    <p class="text-slate-500 text-sm mb-8" id="levelReached">Reached Level 1</p>
+    <button class="play-btn" id="replayBtn" aria-label="Play again">PLAY AGAIN</button>
+  </div>
+</div>
+
+<script>
+/* ========================================
+   CONSTANTS
+======================================== */
+const ROWS = 8, COLS = 8, NUM_TYPES = 5;
+const ANIM_SPEED = 14;
+const COLORS = [
+  { m:'#FF4757', l:'#FF7979', d:'#BF3545' },
+  { m:'#38BDF8', l:'#7DD3FC', d:'#0C7CC4' },
+  { m:'#34D399', l:'#6EE7B7', d:'#1A9A6B' },
+  { m:'#FBBF24', l:'#FDE68A', d:'#C9930A' },
+  { m:'#C084FC', l:'#D8B4FE', d:'#8B5CF6' }
+];
+
+/* ========================================
+   AUDIO
+======================================== */
+class SoundFX {
+  constructor(){ this.ctx=null; }
+  init(){ if(!this.ctx) this.ctx=new (window.AudioContext||window.webkitAudioContext)(); }
+  _tone(freq,dur,type='sine',vol=0.15){
+    if(!this.ctx)return; const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+    o.type=type; o.frequency.value=freq; g.gain.setValueAtTime(vol,this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+dur);
+    o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+dur);
+  }
+  select(){ this._tone(880,0.06,'sine',0.1); }
+  swap(){ this._tone(440,0.1,'triangle',0.08); this._tone(660,0.1,'triangle',0.06); }
+  match(combo){
+    const base=520+combo*80;
+    this._tone(base,0.15,'sine',0.12);
+    setTimeout(()=>this._tone(base*1.25,0.15,'sine',0.1),60);
+    setTimeout(()=>this._tone(base*1.5,0.2,'sine',0.08),120);
+  }
+  special(){
+    this._tone(600,0.1,'square',0.08);
+    setTimeout(()=>this._tone(900,0.15,'square',0.1),50);
+    setTimeout(()=>this._tone(1200,0.2,'square',0.12),100);
+  }
+  noMatch(){ this._tone(200,0.15,'sawtooth',0.06); }
+  levelUp(){
+    [523,659,784,1047].forEach((f,i)=>setTimeout(()=>this._tone(f,0.2,'sine',0.12),i*100));
+  }
+  gameOver(){
+    [400,350,300,250].forEach((f,i)=>setTimeout(()=>this._tone(f,0.3,'sine',0.1),i*150));
+  }
+}
+const sfx = new SoundFX();
+
+/* ========================================
+   PARTICLE SYSTEM
+======================================== */
+class Particle {
+  constructor(x,y,color){
+    this.x=x; this.y=y; this.color=color;
+    const angle=Math.random()*Math.PI*2, speed=80+Math.random()*200;
+    this.vx=Math.cos(angle)*speed; this.vy=Math.sin(angle)*speed;
+    this.life=1; this.decay=1.2+Math.random()*1.5;
+    this.size=2+Math.random()*4;
+  }
+  update(dt){ this.x+=this.vx*dt; this.y+=this.vy*dt; this.vy+=300*dt; this.vx*=0.98; this.life-=this.decay*dt; }
+  draw(ctx){
+    ctx.globalAlpha=Math.max(0,this.life);
+    ctx.fillStyle=this.color;
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.size*this.life,0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+
+class FloatText {
+  constructor(x,y,text,color){
+    this.x=x; this.y=y; this.text=text; this.color=color; this.life=1; this.vy=-60;
+  }
+  update(dt){ this.y+=this.vy*dt; this.vy*=0.97; this.life-=dt*1.2; }
+  draw(ctx){
+    ctx.globalAlpha=Math.max(0,this.life);
+    ctx.fillStyle=this.color;
+    ctx.font='bold 18px Nunito';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(this.text,this.x,this.y);
+    ctx.globalAlpha=1;
+  }
+}
+
+/* ========================================
+   GEM CLASS
+======================================== */
+class Gem {
+  constructor(type,row,col){
+    this.type=type; this.special=null;
+    this.row=row; this.col=col;
+    this.px=col; this.py=row;
+    this.scale=1; this.alpha=1;
+    this.removing=false;
+    this.selected=false;
+  }
+  update(dt){
+    const spd=ANIM_SPEED;
+    this.px+=(this.col-this.px)*spd*dt;
+    this.py+=(this.row-this.py)*spd*dt;
+    const ts=this.removing?0:1;
+    this.scale+=(ts-this.scale)*spd*dt;
+    this.alpha+=(ts-this.alpha)*spd*dt;
+    if(Math.abs(this.px-this.col)<0.005) this.px=this.col;
+    if(Math.abs(this.py-this.row)<0.005) this.py=this.row;
+  }
+  settled(){
+    return Math.abs(this.px-this.col)<0.02 && Math.abs(this.py-this.row)<0.02 &&
+           Math.abs(this.scale-(this.removing?0:1))<0.02;
+  }
+}
+
+/* ========================================
+   GAME CLASS
+======================================== */
+class Game {
+  constructor(canvas){
+    this.canvas=canvas; this.ctx=canvas.getContext('2d');
+    this.particles=[]; this.floats=[];
+    this.state='idle'; // idle, selected, swapping, swapback, removing, falling, gameover
+    this.board=[]; this.selected=null;
+    this.score=0; this.level=1; this.goalScore=1000;
+    this.timeLeft=60; this.combo=0;
+    this.lastTime=0; this.gameTime=0;
+    this.shakeAmt=0; this.running=false;
+    this.swapA=null; this.swapB=null;
+    this.removeList=[]; this.createSpecials=[];
+    this.timerInterval=null;
+    this.cellSize=0; this.boardPx=0;
+  }
+
+  /* --- Board Generation --- */
+  init(){
+    const maxSize=Math.min(window.innerWidth-24, window.innerHeight-200, 520);
+    this.cellSize=Math.floor(maxSize/COLS);
+    this.boardPx=this.cellSize*COLS;
+    const dpr=window.devicePixelRatio||1;
+    this.canvas.width=this.boardPx*dpr; this.canvas.height=this.boardPx*dpr;
+    this.canvas.style.width=this.boardPx+'px'; this.canvas.style.height=this.boardPx+'px';
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    this.score=0; this.level=1; this.goalScore=1000; this.timeLeft=60;
+    this.combo=0; this.state='idle'; this.selected=null;
+    this.particles=[]; this.floats=[]; this.shakeAmt=0; this.gameTime=0;
+    this.generateBoard();
+    this.updateUI();
+    this.running=true;
+    if(this.timerInterval) clearInterval(this.timerInterval);
+    this.timerInterval=setInterval(()=>{
+      if(this.running && this.state!=='gameover'){
+        this.timeLeft--;
+        document.getElementById('timeVal').textContent=this.timeLeft;
+        if(this.timeLeft<=10) document.getElementById('timeVal').style.color='#FF4757';
+        if(this.timeLeft<=0){ this.timeLeft=0; this.endGame(); }
+      }
+    },1000);
+    this.lastTime=performance.now();
+    requestAnimationFrame(t=>this.loop(t));
+  }
+
+  generateBoard(){
+    this.board=[];
+    for(let r=0;r<ROWS;r++){
+      this.board[r]=[];
+      for(let c=0;c<COLS;c++){
+        let type;
+        do{ type=Math.floor(Math.random()*NUM_TYPES); }
+        while(this._wouldMatch(r,c,type));
+        const g=new Gem(type,r,c);
+        g.py=r-ROWS-Math.random()*3;
+        this.board[r][c]=g;
+      }
+    }
+  }
+
+  _wouldMatch(r,c,type){
+    if(c>=2 && this.board[r][c-1] && this.board[r][c-2] &&
+       this.board[r][c-1].type===type && this.board[r][c-2].type===type) return true;
+    if(r>=2 && this.board[r-1] && this.board[r-2] &&
+       this.board[r-1][c] && this.board[r-2][c] &&
+       this.board[r-1][c].type===type && this.board[r-2][c].type===type) return true;
+    return false;
+  }
+
+  /* --- Match Finding --- */
+  findMatches(){
+    const matched=new Set();
+    const hRuns=[], vRuns=[];
+    for(let r=0;r<ROWS;r++){
+      let s=0;
+      for(let c=1;c<=COLS;c++){
+        if(c<COLS && this.board[r][c] && this.board[r][c-1] && this.board[r][c].type===this.board[r][c-1].type) continue;
+        const len=c-s;
+        if(len>=3){
+          hRuns.push({row:r,startCol:s,length:len});
+          for(let i=s;i<c;i++) matched.add(r+','+i);
+        }
+        s=c;
+      }
+    }
+    for(let c=0;c<COLS;c++){
+      let s=0;
+      for(let r=1;r<=ROWS;r++){
+        if(r<ROWS && this.board[r][c] && this.board[r-1][c] && this.board[r][c].type===this.board[r-1][c].type) continue;
+        const len=r-s;
+        if(len>=3){
+          vRuns.push({col:c,startRow:s,length:len});
+          for(let i=s;i<r;i++) matched.add(i+','+c);
+        }
+        s=r;
+      }
+    }
+    // Determine specials
+    const specials=[];
+    const spSet=new Set();
+    // T/L intersections
+    for(const h of hRuns) for(const v of vRuns){
+      for(let c=h.startCol;c<h.startCol+h.length;c++){
+        if(v.startRow<=h.row && h.row<v.startRow+v.length &&
+           h.startCol<=v.col && v.col<h.startCol+h.length){
+          const k=h.row+','+v.col;
+          if(!spSet.has(k)){ spSet.add(k); specials.push({row:h.row,col:v.col,special:'bomb'}); }
+        }
+      }
+    }
+    for(const h of hRuns){
+      if(h.length>=5){ const mc=h.startCol+Math.floor(h.length/2); const k=h.row+','+mc;
+        if(!spSet.has(k)){ spSet.add(k); specials.push({row:h.row,col:mc,special:'rainbow'}); }}
+      else if(h.length>=4){ const mc=h.startCol+1; const k=h.row+','+mc;
+        if(!spSet.has(k)){ spSet.add(k); specials.push({row:h.row,col:mc,special:'hline'}); }}
+    }
+    for(const v of vRuns){
+      if(v.length>=5){ const mr=v.startRow+Math.floor(v.length/2); const k=mr+','+v.col;
+        if(!spSet.has(k)){ spSet.add(k); specials.push({row:mr,col:v.col,special:'rainbow'}); }}
+      else if(v.length>=4){ const mr=v.startRow+1; const k=mr+','+v.col;
+        if(!spSet.has(k)){ spSet.add(k); specials.push({row:mr,col:v.col,special:'vline'}); }}
+    }
+    return {matched, specials, hRuns, vRuns};
+  }
+
+  /* --- Activate Special Gems --- */
+  activateSpecials(toRemove){
+    const processed=new Set(); let changed=true;
+    while(changed){
+      changed=false;
+      for(const key of [...toRemove]){
+        if(processed.has(key)) continue;
+        const [r,c]=key.split(',').map(Number);
+        const gem=this.board[r][c];
+        if(!gem||!gem.special) continue;
+        processed.add(key);
+        const extra=this._activateOne(gem,r,c);
+        for(const k of extra) if(!toRemove.has(k)){ toRemove.add(k); changed=true; }
+      }
+    }
+  }
+
+  _activateOne(gem,row,col){
+    const extra=new Set();
+    switch(gem.special){
+      case 'hline': for(let c=0;c<COLS;c++) if(this.board[row][c]) extra.add(row+','+c); break;
+      case 'vline': for(let r=0;r<ROWS;r++) if(this.board[r][col]) extra.add(r+','+col); break;
+      case 'bomb':
+        for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++){
+          const nr=row+dr,nc=col+dc;
+          if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&this.board[nr][nc]) extra.add(nr+','+nc);
+        } break;
+      case 'rainbow':
+        for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+          if(this.board[r][c]&&this.board[r][c].type===gem.type) extra.add(r+','+c);
+        break;
+    }
+    return extra;
+  }
+
+  /* --- Process Matches --- */
+  processMatches(){
+    const result=this.findMatches();
+    if(result.matched.size===0) return false;
+    this.combo++;
+    let toRemove=new Set(result.matched);
+    this.activateSpecials(toRemove);
+    // Don't remove positions where new specials are created
+    const specialPositions=new Set(result.specials.map(s=>s.row+','+s.col));
+    let pts=0;
+    for(const key of toRemove){
+      if(specialPositions.has(key)) continue;
+      const [r,c]=key.split(',').map(Number);
+      const gem=this.board[r][c];
+      if(gem){
+        gem.removing=true;
+        this.spawnParticles(gem,c*this.cellSize+this.cellSize/2,r*this.cellSize+this.cellSize/2,COLORS[gem.type].m,12);
+        pts+=10;
+      }
+    }
+    pts*=this.combo;
+    this.score+=pts;
+    // Create specials on surviving gems
+    for(const sp of result.specials){
+      if(toRemove.has(sp.row+','+sp.col)){ this.score+=200; continue; }
+      const gem=this.board[sp.row][sp.col];
+      if(gem) gem.special=sp.special;
+    }
+    if(this.combo>1) this.showCombo(this.combo);
+    sfx.match(this.combo);
+    if(result.specials.length>0) sfx.special();
+    this.shakeAmt=Math.min(8,2+this.combo*1.5);
+    // Score float
+    const firstKey=[...toRemove][0];
+    if(firstKey){
+      const [fr,fc]=firstKey.split(',').map(Number);
+      this.floats.push(new FloatText(fc*this.cellSize+this.cellSize/2,fr*this.cellSize+this.cellSize/2,'+'+pts,'#FCD34D'));
+    }
+    this.removeList=[...toRemove].filter(k=>!specialPositions.has(k));
+    this.createSpecials=result.specials;
+    this.state='removing';
+    this.updateUI();
+    return true;
+  }
+
+  /* --- Gravity & Fill --- */
+  applyGravity(){
+    for(let c=0;c<COLS;c++){
+      let writeRow=ROWS-1;
+      for(let r=ROWS-1;r>=0;r--){
+        if(this.board[r][c]&&!this.board[r][c].removing){
+          if(r!==writeRow){
+            this.board[writeRow][c]=this.board[r][c];
+            this.board[writeRow][c].row=writeRow;
+            this.board[r][c]=null;
+          }
+          writeRow--;
+        }
+      }
+      for(let r=writeRow;r>=0;r--){
+        this.board[r][c]=null;
+      }
+    }
+  }
+
+  fillEmpty(){
+    for(let c=0;c<COLS;c++){
+      let empties=0;
+      for(let r=0;r<ROWS;r++) if(!this.board[r][c]) empties++;
+      let idx=0;
+      for(let r=0;r<ROWS;r++){
+        if(!this.board[r][c]){
+          let type; do{ type=Math.floor(Math.random()*NUM_TYPES); }while(false);
+          const g=new Gem(type,r,c);
+          g.py=-(empties-idx)-1-Math.random()*0.5;
+          this.board[r][c]=g;
+          idx++;
+        }
+      }
+    }
+  }
+
+  hasValidMoves(){
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(c<COLS-1){ this._swapBoard(r,c,r,c+1);
+        if(this.findMatches().matched.size>0){ this._swapBoard(r,c,r,c+1); return true; }
+        this._swapBoard(r,c,r,c+1);
+      }
+      if(r<ROWS-1){ this._swapBoard(r,c,r+1,c);
+        if(this.findMatches().matched.size>0){ this._swapBoard(r,c,r+1,c); return true; }
+        this._swapBoard(r,c,r+1,c);
+      }
+    }
+    return false;
+  }
+
+  _swapBoard(r1,c1,r2,c2){
+    const tmp=this.board[r1][c1]; this.board[r1][c1]=this.board[r2][c2]; this.board[r2][c2]=tmp;
+    if(this.board[r1][c1]){ this.board[r1][c1].row=r1; this.board[r1][c1].col=c1; }
+    if(this.board[r2][c2]){ this.board[r2][c2].row=r2; this.board[r2][c2].col=c2; }
+  }
+
+  shuffleBoard(){
+    const gems=[];
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(this.board[r][c]) gems.push(this.board[r][c].type);
+    for(let i=gems.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [gems[i],gems[j]]=[gems[j],gems[i]]; }
+    let idx=0;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      this.board[r][c].type=gems[idx++]; this.board[r][c].special=null;
+    }
+    // Remove accidental matches
+    let safety=0;
+    while(this.findMatches().matched.size>0 && safety<100){
+      for(const key of this.findMatches().matched){
+        const [r,c]=key.split(',').map(Number);
+        this.board[r][c].type=Math.floor(Math.random()*NUM_TYPES);
+      }
+      safety++;
+    }
+    this.floats.push(new FloatText(this.boardPx/2,this.boardPx/2,'SHUFFLED!','#C084FC'));
+  }
+
+  /* --- Input --- */
+  handleClick(mx,my){
+    if(this.state!=='idle'&&this.state!=='selected') return;
+    const c=Math.floor(mx/this.cellSize), r=Math.floor(my/this.cellSize);
+    if(r<0||r>=ROWS||c<0||c>=COLS||!this.board[r][c]) return;
+    sfx.init();
+    if(this.state==='idle'){
+      this.selected={r,c}; this.board[r][c].selected=true; this.state='selected'; sfx.select();
+    } else if(this.state==='selected'){
+      const sr=this.selected.r, sc=this.selected.c;
+      this.board[sr][sc].selected=false;
+      if(r===sr&&c===sc){ this.state='idle'; this.selected=null; return; }
+      const adj=Math.abs(r-sr)+Math.abs(c-sc)===1;
+      if(adj){
+        this.swapA={r:sr,c:sc}; this.swapB={r,c};
+        this._swapBoard(sr,sc,r,c);
+        this.state='swapping'; sfx.swap();
+      } else {
+        this.selected={r,c}; this.board[r][c].selected=true; sfx.select();
+      }
+    }
+  }
+
+  /* --- Particles --- */
+  spawnParticles(gem,x,y,color,count){
+    for(let i=0;i<count;i++) this.particles.push(new Particle(x,y,color));
+    // Small white sparkles
+    for(let i=0;i<6;i++) this.particles.push(new Particle(x,y,'#ffffff'));
+  }
+
+  showCombo(n){
+    const wrap=document.getElementById('canvasWrap');
+    const div=document.createElement('div');
+    div.className='combo-popup';
+    div.style.cssText=`left:50%;top:50%;transform:translate(-50%,-50%);font-size:${1.5+n*0.3}rem;
+      color:#FCD34D;text-shadow:0 0 20px rgba(252,211,77,0.6);`;
+    div.textContent=n+'x COMBO';
+    wrap.appendChild(div);
+    setTimeout(()=>div.remove(),900);
+  }
+
+  /* --- UI --- */
+  updateUI(){
+    document.getElementById('scoreVal').textContent=this.score;
+    document.getElementById('levelVal').textContent=this.level;
+    document.getElementById('goalVal').textContent=this.goalScore;
+    document.getElementById('timeVal').textContent=this.timeLeft;
+    document.getElementById('timeVal').style.color=this.timeLeft<=10?'#FF4757':'#38BDF8';
+    const pct=Math.min(100,(this.score/this.goalScore)*100);
+    document.getElementById('progressFill').style.width=pct+'%';
+  }
+
+  checkLevelUp(){
+    if(this.score>=this.goalScore){
+      this.level++;
+      this.goalScore=Math.floor(this.goalScore*1.8);
+      this.timeLeft=Math.min(this.timeLeft+30,90);
+      this.updateUI();
+      sfx.levelUp();
+      this.floats.push(new FloatText(this.boardPx/2,this.boardPx/2,'LEVEL UP!','#34D399'));
+    }
+  }
+
+  endGame(){
+    this.state='gameover'; this.running=false;
+    if(this.timerInterval) clearInterval(this.timerInterval);
+    sfx.gameOver();
+    setTimeout(()=>{
+      showScreen('gameOverScreen');
+      document.getElementById('finalScore').textContent=this.score;
+      document.getElementById('levelReached').textContent='Reached Level '+this.level;
+      const stars=this.score>=5000?3:this.score>=2000?2:1;
+      let starHtml='';
+      for(let i=0;i<3;i++) starHtml+=`<i class="fa-solid fa-star text-3xl ${i<stars?'text-yellow-400':'text-slate-700'}"></i>`;
+      document.getElementById('starRating').innerHTML=starHtml;
+      const msgs=['Nice start!','Great game!','Incredible!'];
+      document.getElementById('endMsg').textContent=msgs[Math.min(stars-1,2)];
+    },600);
+  }
+
+  /* --- Main Loop --- */
+  loop(timestamp){
+    if(!this.running && this.state!=='gameover') return;
+    const dt=Math.min(0.05,(timestamp-this.lastTime)/1000);
+    this.lastTime=timestamp; this.gameTime+=dt;
+
+    this.update(dt);
+    this.render();
+
+    if(this.state!=='gameover') requestAnimationFrame(t=>this.loop(t));
+  }
+
+  update(dt){
+    // Update gem visuals
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(this.board[r][c]) this.board[r][c].update(dt);
+    }
+    // Update particles
+    this.particles.forEach(p=>p.update(dt));
+    this.particles=this.particles.filter(p=>p.life>0);
+    this.floats.forEach(f=>f.update(dt));
+    this.floats=this.floats.filter(f=>f.life>0);
+    this.shakeAmt*=0.92; if(this.shakeAmt<0.1) this.shakeAmt=0;
+
+    // State machine
+    if(this.state==='swapping'){
+      if(this.allSettled()){
+        const result=this.findMatches();
+        if(result.matched.size>0){
+          this.combo=0;
+          this.processMatches();
+        } else {
+          // Swap back
+          this._swapBoard(this.swapA.r,this.swapA.c,this.swapB.r,this.swapB.c);
+          this.state='swapback'; sfx.noMatch();
+        }
+      }
+    } else if(this.state==='swapback'){
+      if(this.allSettled()){ this.state='idle'; this.selected=null; }
+    } else if(this.state==='removing'){
+      let allDone=true;
+      for(const key of this.removeList){
+        const [r,c]=key.split(',').map(Number);
+        if(this.board[r][c]&&this.board[r][c].scale>0.05) allDone=false;
+      }
+      if(allDone){
+        // Remove from board
+        for(const key of this.removeList){
+          const [r,c]=key.split(',').map(Number);
+          this.board[r][c]=null;
+        }
+        this.applyGravity();
+        this.fillEmpty();
+        this.state='falling';
+      }
+    } else if(this.state==='falling'){
+      if(this.allSettled()){
+        if(!this.processMatches()){
+          this.combo=0;
+          this.checkLevelUp();
+          if(!this.hasValidMoves()) this.shuffleBoard();
+          this.state='idle'; this.selected=null;
+        }
+      }
+    }
+  }
+
+  allSettled(){
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(this.board[r][c]&&!this.board[r][c].settled()) return false;
+    }
+    return true;
+  }
+
+  /* --- Rendering --- */
+  render(){
+    const ctx=this.ctx; const cs=this.cellSize;
+    ctx.clearRect(0,0,this.boardPx,this.boardPx);
+    ctx.save();
+    // Screen shake
+    if(this.shakeAmt>0.5){
+      ctx.translate((Math.random()-0.5)*this.shakeAmt,(Math.random()-0.5)*this.shakeAmt);
+    }
+    // Board background
+    ctx.fillStyle='#0D1117';
+    ctx.beginPath();
+    this._roundRect(ctx,0,0,this.boardPx,this.boardPx,16);
+    ctx.fill();
+    // Grid cells
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const x=c*cs, y=r*cs;
+      ctx.fillStyle=(r+c)%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.035)';
+      ctx.fillRect(x+1,y+1,cs-2,cs-2);
+    }
+    // Gems
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const gem=this.board[r][c];
+      if(!gem) continue;
+      const px=gem.px*cs, py=gem.py*cs;
+      if(gem.alpha<0.01) continue;
+      this.drawGem(ctx,px,py,cs,gem);
+    }
+    // Particles
+    this.particles.forEach(p=>p.draw(ctx));
+    // Float texts
+    this.floats.forEach(f=>f.draw(ctx));
+    // Selected highlight
+    if(this.selected && this.board[this.selected.r] && this.board[this.selected.r][this.selected.c]){
+      const gem=this.board[this.selected.r][this.selected.c];
+      const sx=gem.px*cs, sy=gem.py*cs;
+      const pulse=0.6+Math.sin(this.gameTime*8)*0.4;
+      ctx.strokeStyle=`rgba(255,255,255,${0.5*pulse})`;
+      ctx.lineWidth=3;
+      ctx.beginPath();
+      this._roundRect(ctx,sx+3,sy+3,cs-6,cs-6,14);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  drawGem(ctx,px,py,cs,gem){
+    const col=COLORS[gem.type];
+    const s=cs*0.42*gem.scale;
+    if(s<0.5) return;
+    const cx=px+cs/2, cy=py+cs/2;
+    ctx.save();
+    ctx.globalAlpha=Math.max(0,gem.alpha);
+    ctx.translate(cx,cy);
+
+    // Glow for special
+    if(gem.special){
+      ctx.shadowColor=col.m; ctx.shadowBlur=12+Math.sin(this.gameTime*4)*4;
+    }
+
+    // Gem body - rounded rect
+    const grad=ctx.createLinearGradient(-s,-s,s,s);
+    grad.addColorStop(0,col.l); grad.addColorStop(0.5,col.m); grad.addColorStop(1,col.d);
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    this._roundRect(ctx,-s,-s,s*2,s*2,s*0.3);
+    ctx.fill();
+
+    // Inner highlight
+    ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.beginPath();
+    this._roundRect(ctx,-s+3,-s+3,s*2-6,s*0.7,s*0.25);
+    ctx.fill();
+
+    // Icon shape
+    this.drawGemIcon(ctx,gem.type,s*0.55);
+
+    // Special overlay
+    if(gem.special) this.drawSpecial(ctx,gem.special,s,col);
+
+    ctx.globalAlpha=1;
+    ctx.restore();
+  }
+
+  drawGemIcon(ctx,type,s){
+    ctx.fillStyle='rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    switch(type){
+      case 0: ctx.arc(0,0,s,0,Math.PI*2); break;
+      case 1: ctx.moveTo(0,-s); ctx.lineTo(s,0); ctx.lineTo(0,s); ctx.lineTo(-s,0); break;
+      case 2: ctx.moveTo(0,-s); ctx.lineTo(s*0.87,s*0.5); ctx.lineTo(-s*0.87,s*0.5); break;
+      case 3: this._starPath(ctx,0,0,5,s,s*0.45); break;
+      case 4:
+        for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6; ctx.lineTo(Math.cos(a)*s,Math.sin(a)*s);}
+        break;
+    }
+    ctx.closePath(); ctx.fill();
+  }
+
+  drawSpecial(ctx,special,s,col){
+    const t=this.gameTime;
+    ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=2.5;
+    switch(special){
+      case 'hline':
+        ctx.beginPath(); ctx.moveTo(-s,0); ctx.lineTo(s,0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(s-5,-4); ctx.lineTo(s,0); ctx.lineTo(s-5,4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-s+5,-4); ctx.lineTo(-s,0); ctx.lineTo(-s+5,4); ctx.stroke();
+        break;
+      case 'vline':
+        ctx.beginPath(); ctx.moveTo(0,-s); ctx.lineTo(0,s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-4,s-5); ctx.lineTo(0,s); ctx.lineTo(4,s-5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-4,-s+5); ctx.lineTo(0,-s); ctx.lineTo(4,-s+5); ctx.stroke();
+        break;
+      case 'bomb':
+        ctx.beginPath(); ctx.arc(0,0,s*0.6,0,Math.PI*2); ctx.stroke();
+        ctx.lineWidth=1.5;
+        for(let i=0;i<4;i++){const a=Math.PI/2*i; ctx.beginPath(); ctx.moveTo(Math.cos(a)*s*0.3,Math.sin(a)*s*0.3);
+          ctx.lineTo(Math.cos(a)*s*0.8,Math.sin(a)*s*0.8); ctx.stroke();}
+        break;
+      case 'rainbow':
+        for(let i=0;i<6;i++){
+          const hue=(t*120+i*60)%360;
+          ctx.strokeStyle=`hsla(${hue},100%,70%,0.8)`;
+          ctx.lineWidth=2;
+          const a=Math.PI/3*i+t*2;
+          ctx.beginPath();
+          ctx.arc(0,0,s*(0.5+i*0.05),a,a+Math.PI/2.5);
+          ctx.stroke();
+        }
+        break;
+    }
+  }
+
+  _starPath(ctx,cx,cy,pts,or,ir){
+    for(let i=0;i<pts*2;i++){
+      const r=i%2===0?or:ir;
+      const a=Math.PI/pts*i-Math.PI/2;
+      if(i===0) ctx.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);
+      else ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);
+    }
+    ctx.closePath();
+  }
+
+  _roundRect(ctx,x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+    ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+    ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+    ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+    ctx.closePath();
+  }
+}
+
+/* ========================================
+   SCREEN MANAGEMENT
+======================================== */
+const game=new Game(document.getElementById('gameCanvas'));
+
+function showScreen(id){
+  ['startScreen','gameScreen','gameOverScreen'].forEach(s=>{
+    document.getElementById(s).classList.toggle('hidden',s!==id);
+  });
+}
+
+// Create floating background gems on start screen
+(function initBgGems(){
+  const container=document.getElementById('bgGems');
+  const gemColors=['#FF4757','#38BDF8','#34D399','#FBBF24','#C084FC'];
+  for(let i=0;i<25;i++){
+    const div=document.createElement('div');
+    div.className='bg-gem';
+    const size=20+Math.random()*40;
+    div.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;
+      background:${gemColors[i%5]};animation-duration:${8+Math.random()*12}s;
+      animation-delay:${-Math.random()*15}s;border-radius:${6+Math.random()*12}px;`;
+    container.appendChild(div);
+  }
+})();
+
+document.getElementById('playBtn').addEventListener('click',()=>{
+  sfx.init(); showScreen('gameScreen'); game.init();
+});
+document.getElementById('replayBtn').addEventListener('click',()=>{
+  sfx.init(); showScreen('gameScreen'); game.init();
+});
+
+// Canvas click/touch handling
+const cvs=document.getElementById('gameCanvas');
+function getCanvasPos(e){
+  const rect=cvs.getBoundingClientRect();
+  const scaleX=game.boardPx/rect.width, scaleY=game.boardPx/rect.height;
+  const clientX=e.touches?e.touches[0].clientX:e.clientX;
+  const clientY=e.touches?e.touches[0].clientY:e.clientY;
+  return { x:(clientX-rect.left)*scaleX, y:(clientY-rect.top)*scaleY };
+}
+cvs.addEventListener('click',e=>{ const p=getCanvasPos(e); game.handleClick(p.x,p.y); });
+cvs.addEventListener('touchstart',e=>{
+  e.preventDefault(); const p=getCanvasPos(e); game.handleClick(p.x,p.y);
+},{passive:false});
+
+// Resize handling
+window.addEventListener('resize',()=>{
+  if(game.running){
+    const maxSize=Math.min(window.innerWidth-24,window.innerHeight-200,520);
+    game.cellSize=Math.floor(maxSize/COLS);
+    game.boardPx=game.cellSize*COLS;
+    const dpr=window.devicePixelRatio||1;
+    game.canvas.width=game.boardPx*dpr; game.canvas.height=game.boardPx*dpr;
+    game.canvas.style.width=game.boardPx+'px'; game.canvas.style.height=game.boardPx+'px';
+    game.ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+});
+</script>
+</body>
+</html>
